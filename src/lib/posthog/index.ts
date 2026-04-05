@@ -1,0 +1,1 @@
+export { getPostHogConfig } from './init';

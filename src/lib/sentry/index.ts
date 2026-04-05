@@ -1,0 +1,1 @@
+export { initSentry } from './init';

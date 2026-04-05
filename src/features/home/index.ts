@@ -1,1 +1,2 @@
-// Home feature barrel — components and hooks will be added here.
+export { fetchHome } from './api';
+export { useHome } from './hooks';

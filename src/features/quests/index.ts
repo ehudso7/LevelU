@@ -1,1 +1,2 @@
-// Quests feature barrel — components and hooks will be added here.
+export { startQuest, completeQuest, uploadProofPhoto } from './api';
+export { useQuestStart, useQuestComplete } from './hooks';

@@ -1,25 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
-import { setOnboardingComplete } from '../../src/lib/storage';
-import { useAuthStore } from '../../src/features/auth';
+import { useOnboardingBootstrap } from '../../src/features/auth';
+import { getCachedJson, CacheKeys } from '../../src/lib/storage';
+import * as Localization from 'expo-localization';
 
 export default function StarterPack() {
   const router = useRouter();
-  const { setIsOnboarded } = useAuthStore();
+  const bootstrap = useOnboardingBootstrap();
+  const [error, setError] = useState<string | null>(null);
 
   const handleComplete = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setError(null);
 
-    // Mark onboarding as complete
-    await setOnboardingComplete();
-    setIsOnboarded(true);
+    // Gather cached onboarding selections
+    const vibes = await getCachedJson<string[]>(CacheKeys.ONBOARDING_VIBES);
+    const duration = await getCachedJson<string>(CacheKeys.ONBOARDING_DURATION);
 
-    // Navigate to home — replace stack so user can't go back to onboarding
-    router.replace('/(tabs)/home');
+    // Get device timezone
+    const timezone = Localization.getCalendars()[0]?.timeZone ?? 'UTC';
+
+    bootstrap.mutate(
+      {
+        timezone,
+        preferredVibe: vibes?.[0] ?? 'adventure',
+        preferredQuestDuration: duration ?? 'steady',
+        starterPack: 'spark',
+      },
+      {
+        onSuccess: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace('/(tabs)/home');
+        },
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+        },
+      },
+    );
   };
 
   return (
@@ -34,25 +54,41 @@ export default function StarterPack() {
           <Text style={styles.packEmoji}>🎒</Text>
           <Text style={styles.packTitle}>Day 1 Kit</Text>
           <View style={styles.packItems}>
-            <Text style={styles.packItem}>3 daily quests tailored to your vibes</Text>
-            <Text style={styles.packItem}>XP tracking from the start</Text>
-            <Text style={styles.packItem}>Streak counter activated</Text>
+            <PackItem text="3 daily quests tailored to your vibes" />
+            <PackItem text="XP tracking from the start" />
+            <PackItem text="Streak counter activated" />
           </View>
         </View>
+
+        {error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
-        <Button title="Let's Go!" onPress={handleComplete} />
+        <Button
+          title="Let's Go!"
+          onPress={handleComplete}
+          loading={bootstrap.isPending}
+        />
       </View>
     </ScreenContainer>
   );
 }
 
+function PackItem({ text }: { text: string }) {
+  return (
+    <View style={styles.packItemRow}>
+      <Text style={styles.packCheck}>✓</Text>
+      <Text style={styles.packItemText}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: Spacing.xxl,
-  },
+  content: { flex: 1, paddingTop: Spacing.xxl },
   title: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
@@ -71,27 +107,23 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
   },
-  packEmoji: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
-  },
+  packEmoji: { fontSize: 48, marginBottom: Spacing.md },
   packTitle: {
     fontSize: FontSize.xl,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
     marginBottom: Spacing.lg,
   },
-  packItems: {
-    gap: Spacing.md,
-    width: '100%',
+  packItems: { gap: Spacing.md, width: '100%' },
+  packItemRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  packCheck: { color: Colors.success, fontSize: FontSize.lg, fontWeight: FontWeight.bold },
+  packItemText: { fontSize: FontSize.md, color: Colors.textSecondary, lineHeight: 22, flex: 1 },
+  errorBox: {
+    marginTop: Spacing.lg,
+    backgroundColor: Colors.error + '20',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
   },
-  packItem: {
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    paddingLeft: Spacing.md,
-  },
-  footer: {
-    paddingVertical: Spacing.md,
-  },
+  errorText: { color: Colors.error, fontSize: FontSize.sm, textAlign: 'center' },
+  footer: { paddingVertical: Spacing.md },
 });

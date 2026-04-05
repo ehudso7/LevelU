@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
+import { setCachedJson, CacheKeys } from '../../src/lib/storage';
 import type { PreferredVibe } from '../../src/types';
 
 interface VibeOption {
@@ -13,7 +14,6 @@ interface VibeOption {
   description: string;
 }
 
-// Maps to PreferredVibe enum from the database
 const VIBE_OPTIONS: VibeOption[] = [
   { id: 'fitness', label: 'Fitness', emoji: '💪', description: 'Move your body daily' },
   { id: 'mindfulness', label: 'Mindfulness', emoji: '🧘', description: 'Calm your mind' },
@@ -25,23 +25,21 @@ const VIBE_OPTIONS: VibeOption[] = [
 
 export default function VibeSelection() {
   const router = useRouter();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<PreferredVibe>>(new Set());
 
-  const toggleVibe = (id: string) => {
+  const toggleVibe = (id: PreferredVibe) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  const handleNext = () => {
-    // TODO: Persist selected vibes to user profile via Supabase
+  const handleNext = async () => {
+    // Cache vibes for the bootstrap call on starter-pack screen
+    await setCachedJson(CacheKeys.ONBOARDING_VIBES, Array.from(selected));
     router.push('/onboarding/duration');
   };
 
@@ -57,10 +55,7 @@ export default function VibeSelection() {
           {VIBE_OPTIONS.map((vibe) => (
             <TouchableOpacity
               key={vibe.id}
-              style={[
-                styles.card,
-                selected.has(vibe.id) && styles.cardSelected,
-              ]}
+              style={[styles.card, selected.has(vibe.id) && styles.cardSelected]}
               onPress={() => toggleVibe(vibe.id)}
               activeOpacity={0.7}
             >
@@ -73,24 +68,15 @@ export default function VibeSelection() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button
-          title="Next"
-          onPress={handleNext}
-          disabled={selected.size === 0}
-        />
+        <Button title="Next" onPress={handleNext} disabled={selected.size === 0} />
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: Spacing.xxl,
-    paddingBottom: Spacing.lg,
-  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingTop: Spacing.xxl, paddingBottom: Spacing.lg },
   title: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
@@ -103,11 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     lineHeight: 22,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   card: {
     width: '47%',
     backgroundColor: Colors.bgCard,
@@ -116,25 +98,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  cardSelected: {
-    borderColor: Colors.brand,
-    backgroundColor: Colors.bgElevated,
-  },
-  emoji: {
-    fontSize: 32,
-    marginBottom: Spacing.sm,
-  },
+  cardSelected: { borderColor: Colors.brand, backgroundColor: Colors.bgElevated },
+  emoji: { fontSize: 32, marginBottom: Spacing.sm },
   cardLabel: {
     fontSize: FontSize.lg,
     fontWeight: FontWeight.semibold,
     color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
-  cardDesc: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  footer: {
-    paddingVertical: Spacing.md,
-  },
+  cardDesc: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  footer: { paddingVertical: Spacing.md },
 });

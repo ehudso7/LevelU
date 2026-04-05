@@ -1,0 +1,11 @@
+export const GestureHandlerRootView = ({ children }: any) => children;
+export const Swipeable = {};
+export const DrawerLayout = {};
+export const State = {};
+export const PanGestureHandler = {};
+export const TapGestureHandler = {};
+export const FlingGestureHandler = {};
+export const ForceTouchGestureHandler = {};
+export const LongPressGestureHandler = {};
+export const ScrollView = {};
+export const Directions = {};

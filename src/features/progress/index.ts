@@ -1,1 +1,2 @@
-// Progress feature barrel — components and hooks will be added here.
+export { fetchProgress } from './api';
+export { useProgress } from './hooks';

@@ -4,14 +4,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
-import type { Reward } from '../../src/types';
+import type { RewardSummary } from '../../src/types';
 
 // Temporary placeholder — will be replaced by backend response after quest completion
-const PLACEHOLDER_REWARD: Reward = {
-  id: 'r1',
+const PLACEHOLDER_REWARD: RewardSummary = {
   assignmentId: '',
   xpEarned: 50,
   streakBonus: 10,
+  totalXp: 60,
   levelUp: false,
   newLevel: null,
   message: 'Great job! Keep the momentum going.',
@@ -32,7 +32,7 @@ export default function RewardReveal() {
     router.replace('/(tabs)/home');
   };
 
-  const totalXp = reward.xpEarned + reward.streakBonus;
+  const totalXp = reward.totalXp;
 
   return (
     <ScreenContainer>

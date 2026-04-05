@@ -3,49 +3,109 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
-import type { Assignment } from '../../src/types';
+import type { DailyAssignment, Quest, QuestDifficulty } from '../../src/types';
 
 // Temporary placeholder assignments — will be replaced by Supabase query
-const PLACEHOLDER_ASSIGNMENTS: Assignment[] = [
+const PLACEHOLDER_ASSIGNMENTS: (DailyAssignment & { quest: Quest })[] = [
   {
     id: '1',
+    userId: '',
     questId: 'q1',
-    title: 'Take a 10-minute walk',
-    description: 'Get outside and walk for at least 10 minutes. Fresh air does wonders.',
-    category: 'fitness',
-    difficulty: 'easy',
-    xpReward: 50,
-    dueDate: new Date().toISOString(),
+    assignedDate: new Date().toISOString().split('T')[0],
+    slotNumber: 1,
+    assignmentType: 'daily',
     status: 'pending',
+    startedAt: null,
+    completedAt: null,
+    expiresAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    quest: {
+      id: 'q1',
+      title: 'Take a 10-minute walk',
+      description: 'Get outside and walk for at least 10 minutes. Fresh air does wonders.',
+      category: 'spark',
+      difficulty: 'easy',
+      xpReward: 30,
+      estimatedMinutes: 10,
+      proofType: 'photo',
+      proofPrompt: 'Snap something interesting you saw on your walk.',
+      archetypeId: null,
+      tags: ['fitness', 'mindfulness'],
+      firstWeekOk: true,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   },
   {
     id: '2',
+    userId: '',
     questId: 'q2',
-    title: 'Read 5 pages of a book',
-    description: 'Pick up any book and read at least 5 pages. Physical or digital.',
-    category: 'learning',
-    difficulty: 'easy',
-    xpReward: 40,
-    dueDate: new Date().toISOString(),
+    assignedDate: new Date().toISOString().split('T')[0],
+    slotNumber: 2,
+    assignmentType: 'daily',
     status: 'pending',
+    startedAt: null,
+    completedAt: null,
+    expiresAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    quest: {
+      id: 'q2',
+      title: 'Read for 15 minutes',
+      description: 'Pick up a book — physical or digital — and read for at least 15 uninterrupted minutes.',
+      category: 'momentum',
+      difficulty: 'easy',
+      xpReward: 40,
+      estimatedMinutes: 15,
+      proofType: 'photo',
+      proofPrompt: 'Show what you\'re reading.',
+      archetypeId: null,
+      tags: ['learning', 'reading'],
+      firstWeekOk: true,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   },
   {
     id: '3',
+    userId: '',
     questId: 'q3',
-    title: 'Send a genuine compliment',
-    description: 'Text, call, or tell someone in person something you appreciate about them.',
-    category: 'social',
-    difficulty: 'medium',
-    xpReward: 75,
-    dueDate: new Date().toISOString(),
+    assignedDate: new Date().toISOString().split('T')[0],
+    slotNumber: 3,
+    assignmentType: 'daily',
     status: 'pending',
+    startedAt: null,
+    completedAt: null,
+    expiresAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    quest: {
+      id: 'q3',
+      title: 'Send a genuine compliment',
+      description: 'Text, call, or tell someone in person something you appreciate about them.',
+      category: 'social',
+      difficulty: 'medium',
+      xpReward: 55,
+      estimatedMinutes: 5,
+      proofType: 'text_note',
+      proofPrompt: null,
+      archetypeId: null,
+      tags: ['kindness', 'connection'],
+      firstWeekOk: true,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
 
-  const handleQuestPress = (assignment: Assignment) => {
+  const handleQuestPress = (assignment: DailyAssignment & { quest: Quest }) => {
     router.push(`/quest/${assignment.id}`);
   };
 
@@ -73,14 +133,14 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.cardHeader}>
-              <View style={[styles.difficultyBadge, difficultyColor(item.difficulty)]}>
-                <Text style={styles.difficultyText}>{item.difficulty}</Text>
+              <View style={[styles.difficultyBadge, difficultyColor(item.quest.difficulty)]}>
+                <Text style={styles.difficultyText}>{item.quest.difficulty}</Text>
               </View>
-              <Text style={styles.xp}>+{item.xpReward} XP</Text>
+              <Text style={styles.xp}>+{item.quest.xpReward} XP</Text>
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardTitle}>{item.quest.title}</Text>
             <Text style={styles.cardDescription} numberOfLines={2}>
-              {item.description}
+              {item.quest.description}
             </Text>
           </TouchableOpacity>
         )}
@@ -94,7 +154,7 @@ export default function HomeScreen() {
   );
 }
 
-function difficultyColor(difficulty: Assignment['difficulty']) {
+function difficultyColor(difficulty: QuestDifficulty) {
   switch (difficulty) {
     case 'easy':
       return { backgroundColor: '#00D68F20', borderColor: Colors.success };

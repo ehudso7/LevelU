@@ -4,10 +4,16 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
-import type { DurationPreference } from '../../src/types';
+import type { PreferredDuration } from '../../src/types';
 
-// Temporary placeholder data — will be replaced by backend config
-const DURATION_OPTIONS: DurationPreference[] = [
+interface DurationOption {
+  id: PreferredDuration;
+  label: string;
+  minutesPerDay: number;
+}
+
+// Maps to PreferredDuration enum from the database
+const DURATION_OPTIONS: DurationOption[] = [
   { id: 'chill', label: 'Chill (5 min/day)', minutesPerDay: 5 },
   { id: 'steady', label: 'Steady (15 min/day)', minutesPerDay: 15 },
   { id: 'intense', label: 'Intense (30 min/day)', minutesPerDay: 30 },

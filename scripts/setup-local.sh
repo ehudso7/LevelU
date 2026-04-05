@@ -1,52 +1,40 @@
 #!/bin/bash
-# setup-local.sh — Initialize local Supabase and run migrations + seeds
+# setup-local.sh — Initialize local Supabase with migrations + seeds
 # Run this from the project root after `npx supabase start`
 
 set -euo pipefail
 
 echo "=== LEVEL Local Setup ==="
 
-# 1. Check Supabase is running
-echo "Checking Supabase status..."
-npx supabase status || {
-  echo "ERROR: Supabase is not running. Start it with: npx supabase start"
-  exit 1
-}
-
-# 2. Get connection string
-DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-
+# 1. Reset DB (runs migrations + seed.sql automatically)
 echo ""
-echo "=== Running Migrations ==="
-for f in supabase/migrations/*.sql; do
-  echo "  -> $(basename "$f")"
-  psql "$DB_URL" -f "$f" 2>&1 | grep -v "^$" | head -5
-done
+echo "Resetting database (migrations + seeds)..."
+npx supabase db reset
 
-echo ""
-echo "=== Running Seeds ==="
-for f in supabase/seed/archetypes.sql supabase/seed/quests_starter.sql; do
-  echo "  -> $(basename "$f")"
-  psql "$DB_URL" -f "$f" 2>&1 | grep -v "^$" | head -5
-done
+# 2. Create .env if it doesn't exist
+if [ ! -f .env ]; then
+  echo ""
+  echo "Creating .env from local Supabase credentials..."
 
-echo ""
-echo "=== Verifying Tables ==="
-psql "$DB_URL" -c "
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'public'
-ORDER BY table_name;
-"
+  # Extract keys from supabase status
+  ANON_KEY=$(npx supabase status -o env 2>/dev/null | grep ANON_KEY | cut -d= -f2 || echo "")
+  SERVICE_KEY=$(npx supabase status -o env 2>/dev/null | grep SERVICE_ROLE_KEY | cut -d= -f2 || echo "")
 
-echo ""
-echo "=== Verifying Seed Data ==="
-psql "$DB_URL" -c "SELECT count(*) as archetype_count FROM archetypes;"
-psql "$DB_URL" -c "SELECT count(*) as quest_count FROM quests;"
+  cat > .env << EOF
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY:-sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH}
+SUPABASE_SERVICE_ROLE_KEY=${SERVICE_KEY:-sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz}
+EOF
+  echo "  .env created"
+else
+  echo ""
+  echo ".env already exists — skipping"
+fi
 
 echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Copy .env.example to .env and fill in local values (or use the generated .env)"
-echo "  2. Start Edge Functions: npx supabase functions serve --env-file .env"
-echo "  3. Start the app: npx expo start"
+echo "  1. Serve Edge Functions:  npx supabase functions serve --env-file .env"
+echo "  2. Test Edge Functions:   bash scripts/test-edge-functions.sh"
+echo "  3. Start the app:        npx expo start"

@@ -72,33 +72,47 @@ CREATE POLICY quests_service_update ON public.quests
 
 -- -------------------------------------------------------
 -- Storage bucket for quest proof photos
+-- (only runs if storage schema exists — skipped when storage is disabled)
 -- -------------------------------------------------------
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'quest-proofs',
-  'quest-proofs',
-  false,
-  5242880,  -- 5MB max
-  ARRAY['image/jpeg', 'image/png', 'image/webp']
-)
-ON CONFLICT (id) DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage'
+  ) THEN
+    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    VALUES (
+      'quest-proofs',
+      'quest-proofs',
+      false,
+      5242880,  -- 5MB max
+      ARRAY['image/jpeg', 'image/png', 'image/webp']
+    )
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+END $$;
 
--- Storage RLS: users can upload to their own folder
-CREATE POLICY quest_proofs_insert ON storage.objects
-  FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'quest-proofs'
-    AND (storage.foldername(name))[1] = auth.uid()::text
-  );
+-- Storage RLS policies (safe to create even if bucket doesn't exist yet)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage'
+  ) THEN
+    EXECUTE 'CREATE POLICY quest_proofs_insert ON storage.objects
+      FOR INSERT TO authenticated
+      WITH CHECK (
+        bucket_id = ''quest-proofs''
+        AND (storage.foldername(name))[1] = auth.uid()::text
+      )';
 
--- Storage RLS: users can read their own proofs
-CREATE POLICY quest_proofs_select ON storage.objects
-  FOR SELECT TO authenticated
-  USING (
-    bucket_id = 'quest-proofs'
-    AND (storage.foldername(name))[1] = auth.uid()::text
-  );
+    EXECUTE 'CREATE POLICY quest_proofs_select ON storage.objects
+      FOR SELECT TO authenticated
+      USING (
+        bucket_id = ''quest-proofs''
+        AND (storage.foldername(name))[1] = auth.uid()::text
+      )';
+  END IF;
+END $$;
 
 -- -------------------------------------------------------
 -- Verification: ensure all tables have RLS enabled

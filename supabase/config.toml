@@ -30,7 +30,7 @@ port = 54322
 # Port used by db diff command to initialize the shadow database.
 shadow_port = 54320
 # Maximum amount of time to wait for health check when starting the local database.
-health_timeout = "2m"
+health_timeout = "5m"
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
 # server_version;` on the remote database to check.
 major_version = 17
@@ -107,7 +107,9 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-enabled = true
+# Disabled locally — storage container fails health checks on 2-core Codespaces.
+# Photo upload testing requires a real device or higher-spec environment.
+enabled = false
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
+import { setCachedJson, CacheKeys } from '../../src/lib/storage';
 import type { PreferredDuration } from '../../src/types';
 
 interface DurationOption {
@@ -12,7 +13,6 @@ interface DurationOption {
   minutesPerDay: number;
 }
 
-// Maps to PreferredDuration enum from the database
 const DURATION_OPTIONS: DurationOption[] = [
   { id: 'chill', label: 'Chill (5 min/day)', minutesPerDay: 5 },
   { id: 'steady', label: 'Steady (15 min/day)', minutesPerDay: 15 },
@@ -22,15 +22,16 @@ const DURATION_OPTIONS: DurationOption[] = [
 
 export default function DurationSelection() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PreferredDuration | null>(null);
 
-  const handleSelect = (id: string) => {
+  const handleSelect = (id: PreferredDuration) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelected(id);
   };
 
-  const handleNext = () => {
-    // TODO: Persist duration preference to user profile via Supabase
+  const handleNext = async () => {
+    if (!selected) return;
+    await setCachedJson(CacheKeys.ONBOARDING_DURATION, selected);
     router.push('/onboarding/starter-pack');
   };
 
@@ -46,10 +47,7 @@ export default function DurationSelection() {
           {DURATION_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.id}
-              style={[
-                styles.option,
-                selected === option.id && styles.optionSelected,
-              ]}
+              style={[styles.option, selected === option.id && styles.optionSelected]}
               onPress={() => handleSelect(option.id)}
               activeOpacity={0.7}
             >
@@ -67,21 +65,14 @@ export default function DurationSelection() {
       </View>
 
       <View style={styles.footer}>
-        <Button
-          title="Next"
-          onPress={handleNext}
-          disabled={!selected}
-        />
+        <Button title="Next" onPress={handleNext} disabled={!selected} />
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: Spacing.xxl,
-  },
+  content: { flex: 1, paddingTop: Spacing.xxl },
   title: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
@@ -94,9 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     lineHeight: 22,
   },
-  options: {
-    gap: Spacing.md,
-  },
+  options: { gap: Spacing.md },
   option: {
     backgroundColor: Colors.bgCard,
     borderRadius: Radius.md,
@@ -104,19 +93,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  optionSelected: {
-    borderColor: Colors.brand,
-    backgroundColor: Colors.bgElevated,
-  },
+  optionSelected: { borderColor: Colors.brand, backgroundColor: Colors.bgElevated },
   optionLabel: {
     fontSize: FontSize.lg,
     fontWeight: FontWeight.medium,
     color: Colors.textPrimary,
   },
-  optionLabelSelected: {
-    color: Colors.brandLight,
-  },
-  footer: {
-    paddingVertical: Spacing.md,
-  },
+  optionLabelSelected: { color: Colors.brandLight },
+  footer: { paddingVertical: Spacing.md },
 });

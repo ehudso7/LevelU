@@ -107,9 +107,7 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-# Disabled locally — storage container fails health checks on 2-core Codespaces.
-# Photo upload testing requires a real device or higher-spec environment.
-enabled = false
+enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 

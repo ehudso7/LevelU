@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { trackEdgeFunctionFailed } from '../analytics';
 import type { ApiError } from '../../types/api';
 
 /**
@@ -29,6 +30,11 @@ export async function callFunction<TResponse, TBody = Record<string, unknown>>(
   });
 
   if (error) {
+    trackEdgeFunctionFailed({
+      functionName,
+      errorCode: 'INTERNAL_ERROR',
+      errorMessage: error.message ?? 'Function call failed',
+    });
     throw new FunctionError(
       'INTERNAL_ERROR',
       error.message ?? 'Function call failed',
@@ -38,6 +44,11 @@ export async function callFunction<TResponse, TBody = Record<string, unknown>>(
   // Edge Functions return JSON — check for error shape
   if (data && typeof data === 'object' && 'error' in data) {
     const apiErr = data as ApiError;
+    trackEdgeFunctionFailed({
+      functionName,
+      errorCode: apiErr.error.code,
+      errorMessage: apiErr.error.message,
+    });
     throw new FunctionError(
       apiErr.error.code,
       apiErr.error.message,

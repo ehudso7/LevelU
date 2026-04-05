@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { fetchHome } from './api';
 import { getCachedJson, setCachedJson, CacheKeys } from '../../lib/storage';
+import { trackHomeViewed, trackDailyAssignmentsLoaded } from '../../lib/analytics';
 import type { HomeResponse } from '../../types/api';
 
 /**
@@ -25,11 +26,16 @@ export function useHome() {
     refetchOnWindowFocus: true,
   });
 
-  // Cache fresh data when it arrives
+  // Cache fresh data and track when it arrives
   useEffect(() => {
     if (query.data) {
       setCachedJson(CacheKeys.HOME_PAYLOAD, query.data);
       setCachedJson(CacheKeys.PROGRESS, query.data.progress);
+      trackHomeViewed();
+      trackDailyAssignmentsLoaded({
+        count: query.data.assignments.length,
+        completedCount: query.data.assignments.filter((a) => a.status === 'completed').length,
+      });
     }
   }, [query.data]);
 

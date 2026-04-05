@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { signInAnonymously, bootstrapOnboarding } from './api';
 import { useAuthStore } from './store';
 import { setOnboardingComplete, setCachedJson, CacheKeys } from '../../lib/storage';
+import { trackOnboardingStarted, trackOnboardingCompleted } from '../../lib/analytics';
 import type { OnboardingBootstrapRequest } from '../../types/api';
 
 /**
@@ -16,6 +17,7 @@ export function useSignInAnonymous() {
       if (data.session) {
         setSession(data.session);
       }
+      trackOnboardingStarted();
     },
   });
 }
@@ -33,7 +35,13 @@ export function useOnboardingBootstrap() {
       const key = `onboard-${Date.now()}`;
       return bootstrapOnboarding(params, key);
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
+      trackOnboardingCompleted({
+        vibe: variables.preferredVibe ?? 'none',
+        duration: variables.preferredQuestDuration,
+        starterPack: variables.starterPack,
+      });
+
       // Cache the home payload for instant load
       await setCachedJson(CacheKeys.HOME_PAYLOAD, data);
       await setCachedJson(CacheKeys.PROGRESS, data.progress);

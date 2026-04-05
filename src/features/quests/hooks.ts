@@ -1,6 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { startQuest, completeQuest, uploadProofPhoto } from './api';
 import { setCachedJson, removeCached, CacheKeys } from '../../lib/storage';
+import {
+  trackQuestStarted,
+  trackProofUploadStarted,
+  trackProofUploadCompleted,
+  trackQuestCompleted,
+  trackStreakExtended,
+  trackLevelUp,
+  trackArchetypeChanged,
+} from '../../lib/analytics';
 import type { QuestCompleteResponse } from '../../types/api';
 
 /**
@@ -14,7 +23,12 @@ export function useQuestStart() {
       const key = `start-${assignmentId}-${Date.now()}`;
       return startQuest(assignmentId, key);
     },
-    onSuccess: async (_data, assignmentId) => {
+    onSuccess: async (data, assignmentId) => {
+      trackQuestStarted({
+        assignmentId,
+        questCategory: data.quest?.category ?? 'unknown',
+        questDifficulty: data.quest?.difficulty ?? 'unknown',
+      });
       // Cache the active assignment ID for restore-on-reopen
       await setCachedJson(CacheKeys.ACTIVE_ASSIGNMENT_ID, assignmentId);
       // Invalidate home to reflect status change
@@ -42,11 +56,23 @@ export function useQuestComplete() {
 
       // Upload photo if present
       if (params.photoUri) {
+        trackProofUploadStarted({
+          assignmentId: params.assignmentId,
+          proofType: params.proofType,
+        });
+        const uploadStart = Date.now();
+
         mediaPath = await uploadProofPhoto(
           params.userId,
           params.assignmentId,
           params.photoUri,
         );
+
+        trackProofUploadCompleted({
+          assignmentId: params.assignmentId,
+          proofType: params.proofType,
+          durationMs: Date.now() - uploadStart,
+        });
       }
 
       const key = `complete-${params.assignmentId}-${Date.now()}`;
@@ -64,6 +90,37 @@ export function useQuestComplete() {
       );
     },
     onSuccess: async (data: QuestCompleteResponse) => {
+      // Track completion
+      trackQuestCompleted({
+        assignmentId: data.reward.assignmentId,
+        questCategory: 'unknown', // Category not in reward response
+        quality: data.reward.quality,
+        xpEarned: data.reward.xpBreakdown.total,
+        levelUp: data.reward.levelUp,
+        isDailyClear: data.reward.xpBreakdown.dailyClearBonus > 0,
+      });
+
+      // Track streak
+      if (data.progress.streak > 0) {
+        trackStreakExtended({
+          newStreak: data.progress.streak,
+          longestStreak: data.progress.longestStreak ?? data.progress.streak,
+        });
+      }
+
+      // Track level up
+      if (data.reward.levelUp && data.reward.newLevel) {
+        trackLevelUp({
+          newLevel: data.reward.newLevel,
+          previousLevel: data.reward.newLevel - 1,
+        });
+      }
+
+      // Track archetype change
+      if (data.archetypes.primaryArchetypeId) {
+        trackArchetypeChanged(data.archetypes);
+      }
+
       // Clear active assignment cache
       await removeCached(CacheKeys.ACTIVE_ASSIGNMENT_ID);
       // Cache updated progress

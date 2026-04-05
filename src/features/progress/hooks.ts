@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { fetchProgress } from './api';
 import { getCachedJson, setCachedJson, CacheKeys } from '../../lib/storage';
+import { trackProgressViewed } from '../../lib/analytics';
 import type { ApiProgressPayload } from '../../types/api';
 
 /**
@@ -30,6 +31,11 @@ export function useProgress() {
   useEffect(() => {
     if (query.data?.progress) {
       setCachedJson(CacheKeys.PROGRESS, query.data.progress);
+      trackProgressViewed({
+        level: query.data.progress.level,
+        streak: query.data.progress.streak,
+        totalCompleted: query.data.progress.totalCompleted,
+      });
     }
   }, [query.data]);
 

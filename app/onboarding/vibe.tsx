@@ -4,10 +4,17 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer, Button } from '../../src/components';
 import { Colors, FontSize, FontWeight, Spacing, Radius } from '../../src/constants';
-import type { VibeCategory } from '../../src/types';
+import type { PreferredVibe } from '../../src/types';
 
-// Temporary placeholder data — will be replaced by backend-driven categories
-const VIBE_OPTIONS: VibeCategory[] = [
+interface VibeOption {
+  id: PreferredVibe;
+  label: string;
+  emoji: string;
+  description: string;
+}
+
+// Maps to PreferredVibe enum from the database
+const VIBE_OPTIONS: VibeOption[] = [
   { id: 'fitness', label: 'Fitness', emoji: '💪', description: 'Move your body daily' },
   { id: 'mindfulness', label: 'Mindfulness', emoji: '🧘', description: 'Calm your mind' },
   { id: 'social', label: 'Social', emoji: '🤝', description: 'Connect with people' },

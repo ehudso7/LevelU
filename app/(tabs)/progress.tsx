@@ -11,6 +11,7 @@ const PLACEHOLDER_PROGRESS: ProgressSnapshot = {
   xp: 0,
   xpToNextLevel: 200,
   streak: 0,
+  longestStreak: 0,
   totalCompleted: 0,
   weeklyCompleted: 0,
 };
